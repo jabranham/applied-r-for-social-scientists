@@ -19,7 +19,7 @@ GSS <- foreign::read.dta("./data/GSS7214_R4.DTA",
                          convert.factors=FALSE)
 
 ## The dplyr package is super useful for data management, so let's
-## load it up. We'll also load magrittr, which provides "pipes" for R:
+## load it up.
 
 library(dplyr)
 
@@ -28,7 +28,6 @@ library(dplyr)
 ## row; mutate(), which creates variables (or changes existing
 ## variables); and group_by(), which lets us compute things by levels
 ## of another variable. More on that later, though.
-
 
 ## Let's say we want the correlation between two variables: nateduc
 ## and natsoc. These measure whether the respondent things we're
@@ -55,11 +54,16 @@ cor(GSS$nateduc,
 table(GSS$race)
 table(GSS$black)
 
-# base R: GSS$black <- with(GSS, ifelse(race == 2, TRUE, FALSE))
-# with pipes and dplyr:
+## base R: GSS$black <- with(GSS, ifelse(race == 2, TRUE, FALSE))
+## with dplyr:
+## dplyr::mutate creates variables
 
-GSS <- GSS %>%
-  mutate(black=ifelse(race == 2, TRUE, FALSE))
+## so here we say "create a variable, "black," that is TRUE if race is
+## 2 and FALSE otherwise." It will keep NAs as NAs
+
+## the mutate() function takes the data as the first argument
+
+GSS <- mutate(GSS, black=ifelse(race == 2, TRUE, FALSE))
 
 table(GSS$black)
 
@@ -67,11 +71,24 @@ cor(GSS$nateduc[GSS$black == TRUE],
     GSS$natsoc[GSS$black == TRUE],
     use="complete.obs")
 
-## We can use piping to make this a little more straightforward, but
-## note that we have to use the summarize() (or summarise() function
-## is British English is your thing) in order to return the summary
-## statistic that we're interested in (the correlation in this case
-## but it could be the mean or whatever)
+## we can use dplyr::filter() to filter based on rows. Since 1972
+## doesn't have the variables we're interested in, let's drop it. It's
+## also a good opportunity to use a "pipe", which just "pipes" in your
+## data to the first argument of the next function:
+
+## without pipes: GSS <- filter(GSS, year != 1972)
+
+GSS <- GSS %>%
+  filter(year != 1972)
+
+## So the below code says to keep only rows where black is TRUE e.g.
+## keep only black respondents. Note that since we're not actually
+## assigning this to anything, it won't delete rows from our data
+
+## next, we use the dplyr::summarize() function to create a summary
+## statistic from our data. If you prefer, you can use the british
+## english summarise spelling. In this case, we want a correlation but
+## we could also calculate a mean or whatever
 
 GSS %>%
   filter(black == TRUE) %>%
@@ -88,6 +105,11 @@ table(GSS$sex)
 GSS$sex <- factor(GSS$sex,
                   levels=c(1, 2),
                   labels=c("M", "F"))
+
+## or, if you wanted to keep it in an entirely dplyr context:
+## GSS <- GSS %>%
+##          mutate(sex=factor(sex,levels=c(1,2),labels=c("M","F")))
+
 table(GSS$sex)
 
 ## Now we take the GSS, group it by sex and black, then summarize it,
@@ -101,7 +123,9 @@ GSS %>%
             n=n())
 
 ## What if we're interested in how supportive people are of increased
-## spending by year? One way is to look at the means by year:
+## spending by year? One way is to look at the means by year. In the
+## following code, we group by year then produce a few aggregated
+## summary statistics
 
 gss_yearly <- GSS %>%
   group_by(year) %>%
@@ -110,20 +134,37 @@ gss_yearly <- GSS %>%
 
 gss_yearly
 
+## We might consider another summary measure, though. How about the
+## proportion of people who support more spending minus the proportion
+## who support less?
+
+## This
+
+netsupport <- function(thedata){
+  thedata <- thedata[!is.na(thedata)]
+  prop_more <- sum(thedata == 1) / length(thedata)
+  prop_less <- sum(thedata == 3) / length(thedata)
+  prop_more - prop_less
+}
+
+GSS %>%
+  group_by(year) %>%
+  summarize(support_educ=netsupport(nateduc),
+            support_soc=netsupport(natsoc))
+
+## again, since we didn't assign it, that data wasn't stored
+
+gss_yearly
+
 summary(gss_yearly)
-
-## Note that we have no information for 1972, so let's drop that year
-## from our data:
-
-gss_yearly <- gss_yearly %>%
-  filter(year != 1972)
 
 ## let's merge in some economic data. the ggplot2 package comes with
 ## monthly economic data for the US, starting in July 1967. For a look at what it contains, we can do ?economics
 
 library(ggplot2)
 economics
-?economics
+
+## We can use ?economics to take a look at the documentation
 
 ## We need to make an unemployment rate, which we'll just define as
 ## unemploy/pop
@@ -139,6 +180,8 @@ economics_yearly <- economics %>%
   group_by(year) %>%
   summarize(unemp=mean(unemp_rate))
 
+economics_yearly
+
 ## now we have two dataframe objects - gss_yearly and economics_yearly
 ## - that we want to join together. Again, dplyr provides a really
 ## easy way of doing this. We call these "joins" (the jargon comes
@@ -146,7 +189,7 @@ economics_yearly <- economics %>%
 ## we more years in the economics dataset than in the gss, we'll tell
 ## dplyr that we're only interested in the years that are in the gss
 ## dataset. If you wanted to keep everything, you can do a full_join()
-## instead:
+## instead, which will propogate missing values (NAs)
 
 gss_yearly <- left_join(gss_yearly,
                         economics_yearly,
@@ -164,3 +207,5 @@ economics_yearly$year <- as.integer(economics_yearly$year)
 gss_yearly <- left_join(gss_yearly,
                         economics_yearly,
                         by="year")
+
+gss_yearly
