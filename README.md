@@ -6,12 +6,18 @@ have at least seen R before, but that they are not comfortable working
 in it. 
 
 # How to use
+
 You can download the entire repository to your computer using the
 "download zip" link on this page. You'll then need to unzip the file.
-Using a text editor (emacs, sublime text, etc) or RStudio, open
+
+Alternatively, you can do a simple git clone:
+
+    git clone https://github.com/jabranham/applied-r-for-social-scientists.git
+
+Then, using a text editor (emacs, sublime text, etc) or RStudio, open
 "R-for-data-analysis.R" to start. You will need an internet connection
 in order to download the data file and packages, if they aren't
-already installed. 
+already installed.
 
 # License 
 
