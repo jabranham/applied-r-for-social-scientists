@@ -209,3 +209,13 @@ gss_yearly <- left_join(gss_yearly,
                         by="year")
 
 gss_yearly
+
+## Finally, we may want to write our new dataset to a new file so that
+## we don't have to rerun the loading and merging commands. Unless
+## you're dealing with LARGE data, I recommend CSV format, which can
+## be read by a variety of programs. Again, foreign provides
+## write.csv() and readr provides write_csv()
+
+## (don't have to check that the data subdirectory exists since the
+## first script ran guarantees that)
+readr::write_csv(gss_yearly, "./data/gss-yearly-data.csv")
