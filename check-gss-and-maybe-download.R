@@ -14,4 +14,6 @@ if(!file.exists("./data/GSS7214_R4.DTA")){
 
 if(file.exists("./data/GSS7214_R4.DTA")){
   print("GSS file exists!")
+} else {
+  print("Error - GSS couldn't be found!")
 }
