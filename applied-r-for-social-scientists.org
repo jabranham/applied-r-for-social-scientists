@@ -512,9 +512,9 @@
 
 
 #+BEGIN_SRC R
-    by_country <- by_country %>%
-      mutate(model = purrr::map(data, 
-                                ~ lm(lifeExp ~ year, data = .)))
+  by_country <- by_country %>%
+    mutate(model = purrr::map(data, 
+                              ~ lm(lifeExp ~ year, data = .)))
 #+END_SRC
 
 ** nest
@@ -538,6 +538,70 @@
 ** Graphing
 #+ATTR_LATEX: :width 0.6\textwidth :float t
 [[file:gapminder-fitted-plot.pdf]]
+
+* Iteration: Loops and apply
+
+** DRY
+- DRY (/Don't Repeat Yourself/) is an acronym from computer science
+- Repeating yourself makes your code harder to deal with:
+  - Intent is less clear
+  - Harder to spot bugs
+
+** Loops
+- For loops get lots of hate online because people think they're slow
+  (they aren't)
+- They can be hard to read, though
+
+
+#+BEGIN_SRC R
+  thedata <- data_frame(
+    one = rnorm(100), two = rnorm(100), 
+    three = rnorm(100), four = rnorm(100)
+  )
+#+END_SRC
+
+
+** For loops
+
+*** Medians                                                           :BMCOL:
+    :PROPERTIES:
+    :BEAMER_col: 0.5
+    :END:
+
+#+BEGIN_SRC R
+  output <- list()
+  output[[1]] <- median(thedata$one)
+  output[[2]] <- median(thedata$two)
+  output[[3]] <- median(thedata$three)
+  output[[4]] <- median(thedata$four)
+  print(output); rm(output)
+#+END_SRC
+
+*** Medians - looping                                                 :BMCOL:
+    :PROPERTIES:
+    :BEAMER_col: 0.5
+    :END:
+
+#+BEGIN_SRC R
+  output <- list()
+  for (i in 1:4) {
+    output[[i]] <- median(thedata[[i]])
+  }
+  print(output); rm(output)
+#+END_SRC
+
+** Mapping functions
+- Of course, we oftentimes need to perform an operation across many
+  columns
+- This is where the =map= family (from =purrr=) steps in:
+
+  #+BEGIN_SRC R
+    purrr::map(thedata, median)
+    purrr::map_dbl(thedata, median)
+  #+END_SRC
+
+
+
 
 * Footnotes
 
