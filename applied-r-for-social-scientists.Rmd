@@ -565,8 +565,4 @@ by_country %>% unnest(model %>% purrr::map(broom::augment)) %>%
   geom_line()
 ```
 
-
-
-
-
 [^1]: This example taken from the [blog post](http://blog.rstudio.org/2016/02/02/tidyr-0-4-0/)
