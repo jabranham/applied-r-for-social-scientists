@@ -1,0 +1,572 @@
+---
+title: "Applied R for Social Scientists"
+author: "J. Alexander Branham"
+date: "April 2016"
+header-includes: 
+    - \usetheme[titleformat=smallcaps, progressbar=frametitle]{metropolis}
+output: 
+  beamer_presentation:
+    latex_engine: xelatex
+classoption: aspectratio=169
+---
+
+# This Class
+## This class
+* Assumption of *some* previous exposure to R
+  + We're not explaining assignment, packages, calling functions, etc
+* Will *not* be covering statistics
+* Alex will start with some common data tasks: loading, variable
+  creation, merging, etc
+* Daniel will take the second part to talk about tables and
+  visualization 
+
+# Getting the data
+## Download the data
+
+* `source()` runs a file through R
+* This one checks if you have the data already and tries to download
+  it if not
+* The dataset we're using is the General Social Survey spanning 1972-2014
+
+```{r}
+source("check-gss-and-maybe-download.R")
+```
+
+## Reading data
+* R can read almost any data
+* Here are some of the most common types:
+
+| package | function   | file formats               |
+|---------+------------+----------------------------|
+| foreign | `read.*`   | dta, spss, etc             |
+| haven   | `read_*`   | dta (13+) files and others |
+| readr   | `read_csv` | csv files                  |
+  
+## Read data
+* We have stata data (`*.dta`)
+* `convert.factors = FALSE` ensures that R doesn't convert the values to
+  the labels that stata uses
+
+```{r}
+GSS <- foreign::read.dta("./data/GSS7214_R4.DTA",
+                         convert.factors = FALSE)
+```
+
+# Data management
+## The data: a table
+* Let's get a sense of the data we're working with
+* Do you want more, less, or about the same spending? (education and
+  social security)
+
+```{r}
+table(GSS$nateduc, GSS$natsoc, exclude = NULL)
+```
+
+## correlation
+* `cor` gives us (by default) the pearson's $r$ between two variables
+* Without setting `use`, R tries to use the whole data, some of which
+  are missing and thus results in `NA`
+
+```{r}
+cor(GSS$nateduc,
+    GSS$natsoc,
+    use = "complete.obs")
+```
+
+## Variable creation 
+* Let's make an indicator variable for whether a respondent is black
+  or not
+* Here's the `race` variable
+* I also like to make sure that I'm not going to overwrite an existing
+  variable
+ 
+
+```{r}
+table(GSS$race)
+```
+
+```{r}
+table(GSS$black)
+```
+
+## Variable creation
+* Using `ifelse` to create a variable conditional on other var's
+  values
+
+```{r}
+GSS$black <- ifelse(GSS$race == 2, TRUE, FALSE)
+table(GSS$black)
+```
+
+## Subsetting observations
+* Now let's check to see if that correlation is different for black
+  people
+* Note how ugly this looks!
+
+```{r}
+cor(GSS$nateduc[GSS$black == TRUE],
+    GSS$natsoc[GSS$black == TRUE],
+    use="complete.obs")
+```
+
+## dplyr
+* `dplyr` is an R package that makes data management *much* easier
+* Different functions for data munging:
+  - `filter()`, `select()`, `mutate()`
+* It introduces the pipe operator `%>%` to the language
+* Functions for merging data
+  - `*_join`: full, inner, left, right
+* `group_by`, which lets us perform operations on groups of the data
+* Because I'll use `tidyr` later and it gets angry if you load it
+  after `dplyr`, I'm loading it now
+
+```{r}
+library(tidyr)
+suppressPackageStartupMessages(library(dplyr))
+```
+
+## Subsetting the dplyr way
+* The pipe (`%>%`) "pipes" the output of the last thing into the first
+  argument of the next thing
+* `summarize` (or `summarise`) from `dplyr` returns a `data.frame`
+
+```{r}
+with(filter(GSS, black == TRUE),
+     cor(nateduc, natsoc,
+         use = "complete.obs"))
+```
+
+## Subsetting the dplyr way 
+```{r}
+GSS %>%
+  filter(black == TRUE) %>%
+  summarize(mycor =
+              cor(nateduc, natsoc,
+                  use = "complete.obs"))
+```
+
+## Dropping observations
+* 1972 doesn't have any observations we're interested in (our spending
+  variables weren't asked), so let's drop it
+* Again, we can use `filter`, but this time we assign the result back
+  to `GSS`:
+
+```{r}
+GSS <- GSS %>%
+  filter(year != 1972)
+```
+
+## Factors
+* Variables with categories can be represented as factors in R
+* If you want R to think they're ordered, you can use `ordered ` TRUE=
+  as an argument
+
+ <!-- GSS$sex <- factor(GSS$sex, -->
+ <!--                   levels=c(1, 2), -->
+ <!--                   labels=c("M", "F")) -->
+
+```{r}
+table(GSS$sex)
+```
+
+## Factors 
+```{r}
+GSS <- GSS %>%
+  mutate(sex = factor(sex,
+                      levels = c(1, 2),
+                      labels = c("M", "F")))
+
+table(GSS$sex)
+```
+
+## Operations by subcategories
+* `dplyr` provides `group_by`
+* Lets us perform operations to grouped data
+
+
+```{r}
+thecors <- GSS %>%
+  group_by(sex, black) %>%
+  summarize(thecor = cor(nateduc, natsoc,
+                         use = "complete.obs"),
+            n = n())
+```
+
+## Operations by subcategories
+
+```{r}
+print(thecors)
+```
+
+## Aggregation 
+* Maybe we're interested in preferences by year?
+
+```{r}
+gss_yearly <- GSS %>%
+  group_by(year) %>%
+  summarize(educ = mean(nateduc,
+                        na.rm = TRUE),
+            soc = mean(natsoc,
+                       na.rm = TRUE))
+```
+
+## Aggregation
+
+```{r}
+head(gss_yearly)
+```
+
+## Functions
+* Means are nice, but there are other ways to summarize data
+* What if we want to look at the proportion of people who support more
+  spending minus the proportion who support less? 
+
+
+```{r}
+netsupport <- function(thedata){
+  prop_more <- mean(thedata == 1, na.rm = TRUE)
+  prop_less <- mean(thedata == 3, na.rm = TRUE)
+  prop_more - prop_less
+}
+``` 
+
+## Functions
+
+```{r}
+GSS %>%
+  group_by(year) %>%
+  summarize(support_educ = netsupport(nateduc),
+            support_soc = netsupport(natsoc))
+```
+
+## Merging 
+* The `ggplot2` package provides the `economics` data.frame that has
+  US economic data starting in July 1967
+* `?economics` gives more info 
+
+```{r}
+library(ggplot2)
+head(economics, 3)
+```
+
+## Merging
+* Let's make an unemployment rate by unemploy*pop
+
+```{r}
+economics <- economics %>%
+  mutate(unemp_rate = unemploy / pop)
+```
+
+* Note `mutate` is from dplyr, this is base R:
+
+```{r}
+economics$unemp_rate <- economics$unemploy / economics$pop
+```
+
+
+## Merging
+* The `economics` data is monthly and our GSS data is yearly, so we
+  need to aggregate 
+
+```{r}
+economics_yearly <- economics %>%
+  mutate(year = format(date, "%Y")) %>%
+  group_by(year) %>%
+  summarize(unemp = mean(unemp_rate))
+```
+
+## Merging
+* Let's see what our data looks like now!
+
+```{r}
+head(economics_yearly)
+```
+
+## Merging
+* Now we have two data.frame objects --- `gss_yearly` and
+  `economics_yearly` --- that we want to join together
+* `dplyr` provides a really easy way of doing this
+* The jargon comes from SQL, a programming language used to store data
+* What you probably call a "merge" dplyr calls a "join"
+* `*_join` where `*` is either `full`, `inner`, `left`, or `right`
+* We'll use `left_join` since the economics data contains years that
+  aren't in the GSS
+
+## Merging
+
+```{r, error = TRUE}
+gss_yearly <- left_join(gss_yearly,
+                        economics_yearly,
+                        by = "year")
+```
+
+## Errors
+* Error: cannot join on columns 'year' x 'year': Can't join on 'year'
+  x 'year' because of incompatible types (character / integer)
+
+## Errors
+* The error on the last slide indicates that the `year` variable in
+  the two datasets is different
+* Let's verify that:
+
+```{r}
+class(gss_yearly$year)
+```
+
+```{r}
+class(economics_yearly$year)
+```
+
+
+## Merging
+* Solution: change `economics_yearly$year` to an integer
+
+```{r}
+economics_yearly$year <- as.integer(economics_yearly$year)
+
+gss_yearly <- left_join(gss_yearly,
+                        economics_yearly,
+                        by="year")
+```
+
+## Merging 
+
+```{r}
+head(gss_yearly)
+```
+
+## Writing data
+* Maybe you want to save this new data so you don't have to re-run the
+  merging whenever you want to 
+
+| package | function     | result     |
+|---------+--------------+------------|
+| readr   | `write_csv`  | csv file   |
+| utils   | `write.csv`  | csv file   |
+| base    | `save`       | Rdata file |
+| xlsx    | `write.xlsx` | excel file |
+
+* R can also write to stata/SPSS/SAS files through `foreign` or `haven`
+
+## Writing data
+* Let's save a csv file
+* If the `data/` subfolder doesn't exist, this will produce an error
+* The script that we ran at the beginning created this if it didn't
+  already exist
+
+
+```{r}
+readr::write_csv(gss_yearly, "data/gss-yearly-data.csv")
+```
+
+# Tidying data
+## What is tidy data?
+* Sometimes the data you get aren't *tidy*
+* Tidy data are data where each row is an observation, each column a
+  variable, and each cell a value
+* Most of the strategies I showed you above assume that you're dealing
+  with tidy data
+* Remember I loaded tidyr earlier, so there's no need to call
+  `library` again
+
+## Example of untidy data
+
+```{r}
+messy1 <- data_frame(
+  country = c("Afghanistan", "Albania", "Algeria"), 
+  "2007" = c(43.82, 76.42, 72.30), 
+  "2002" = c(42.13, 75.65, 70.99))
+```
+
+## Untidy data
+
+```{r}
+print(messy1)
+```
+
+## Use gather when you have non-variable columns
+* `gather` can also turn wide to long
+
+```{r}
+gather(messy1, "year", "life_expect", 2:3)
+```
+
+## Untidy data
+
+```{r}
+messy2 <- data.frame(
+  country = c(rep("Afghanistan", 4), rep("Albania", 4), rep("Algeria", 4)), 
+  year = c(rep(2002, 2), rep(2007, 2)), 
+  variable = c("life_expect", "pop"), 
+  value = c(42.12, 25268405, 43.82, 31889923,
+            75.65, 3508512, 76.42, 3600523,
+            70.99, 31287142, 72.30, 33333216)
+)
+```
+
+## Untidy data
+
+```{r}
+head(messy2)
+```
+
+## use spread!
+* `spread` can also turn long to wide
+
+```{r}
+spread(messy2, key = variable, value)
+```
+
+## separate and unite
+* If you have two variables in one column, use `separate`
+  * For example, a rate of # of people with a trait / total population
+    in each country
+* One variable across two columns? use `unite`
+  * one column for century (19, 20) and another for year (00... 09)
+
+# Iteration: Loops and apply
+
+## DRY
+* DRY (*Don't Repeat Yourself*) is an acronym from computer science
+* Repeating yourself makes your code harder to deal with:
+  * Intent is less clear
+  * Harder to spot bugs
+
+## Loops
+* For loops get lots of hate online because people think they're slow
+  (they aren't)
+* They can be hard to read, though
+
+
+```{r}
+thedata <- data_frame(
+  one = rnorm(100), two = rnorm(100), 
+  three = rnorm(100), four = rnorm(100)
+)
+```
+
+
+## For loops
+
+```{r}
+output <- list()
+output[[1]] <- median(thedata$one)
+output[[2]] <- median(thedata$two)
+output[[3]] <- median(thedata$three)
+output[[4]] <- median(thedata$four)
+print(output); rm(output)
+```
+
+## For loops
+```{r}
+output <- list()
+for (i in 1:4) {
+  output[[i]] <- median(thedata[[i]])
+}
+print(output); rm(output)
+```
+
+## Mapping functions
+* Of course, we oftentimes need to perform an operation across many
+  columns
+* This is where the `map` family (from `purrr`) steps in:
+
+```{r}
+purrr::map(thedata, median)
+purrr::map_dbl(thedata, median)
+```
+
+# Nested data 
+## For fun: nested date
+* Some data is nested in a hierarchical way
+* the `gapminder` data are a good example[^1]
+
+```{r}
+library(gapminder); library(ggplot2)
+head(gapminder, 3)
+```
+
+## Life expectancy over time
+
+
+```{r, eval = FALSE} 
+ggplot(gapminder, aes(x = year, y = lifeExp,
+                      color = continent, by = country)) +
+  geom_line()
+```
+
+## life expectancy over time
+```{r, echo = FALSE} 
+ggplot(gapminder, aes(x = year, y = lifeExp,
+                      color = continent, by = country)) +
+  geom_line()
+```
+
+
+## introducing the nest function
+
+```{r}
+by_country <- gapminder %>%
+  group_by(continent, country) %>%
+  nest()
+```
+
+## nest
+* Now we have a data frame with one row per group and a column where
+  each cell is itself a whole data frame
+
+```{r}
+head(by_country,3)
+```
+
+## nest
+* So for example the first element of the `data` column contains the
+  whole data frame for Afghanistan 
+
+```{r}
+by_country$data[[1]]
+```
+
+## nest
+* You can create a linear model for each country then:
+
+
+```{r}
+by_country <- by_country %>%
+  mutate(model = purrr::map(data, 
+                            ~ lm(lifeExp ~ year, data = .)))
+```
+
+## nest
+
+```{r}
+head(by_country, 3)
+```
+
+## nest
+* Here we can extract the fitted values and plot a lint of the fitted values
+* By continent, country 
+
+```{r, eval = FALSE}
+by_country %>% unnest(model %>% purrr::map(broom::augment)) %>%
+  select(continent, country, year, .fitted) %>%
+  ggplot(aes(x = year, y = .fitted,
+             by = country, color = continent)) +
+  geom_line()
+```
+
+
+## nest 
+```{r, echo = FALSE}
+by_country %>% unnest(model %>% purrr::map(broom::augment)) %>%
+  select(continent, country, year, .fitted) %>%
+  ggplot(aes(x = year, y = .fitted,
+             by = country, color = continent)) +
+  geom_line()
+```
+
+
+
+
+
+[^1]: This example taken from the [blog post](http://blog.rstudio.org/2016/02/02/tidyr-0-4-0/)
