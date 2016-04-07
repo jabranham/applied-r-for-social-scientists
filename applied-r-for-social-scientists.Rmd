@@ -472,8 +472,14 @@ print(output); rm(output)
 * This is where the `map` family (from `purrr`) steps in:
 
 ```{r}
-purrr::map(thedata, median)
-purrr::map_dbl(thedata, median)
+library(purrr)
+map(thedata, median)
+```
+
+## Mapping functions
+
+```{r}
+map_dbl(thedata, median)
 ```
 
 # Nested data 
@@ -533,8 +539,8 @@ by_country$data[[1]]
 
 ```{r}
 by_country <- by_country %>%
-  mutate(model = purrr::map(data, 
-                            ~ lm(lifeExp ~ year, data = .)))
+  mutate(model = map(data, 
+                     ~ lm(lifeExp ~ year, data = .)))
 ```
 
 ## nest
@@ -548,7 +554,7 @@ head(by_country, 3)
 * By continent, country 
 
 ```{r, eval = FALSE}
-by_country %>% unnest(model %>% purrr::map(broom::augment)) %>%
+by_country %>% unnest(model %>% map(broom::augment)) %>%
   select(continent, country, year, .fitted) %>%
   ggplot(aes(x = year, y = .fitted,
              by = country, color = continent)) +
@@ -558,7 +564,7 @@ by_country %>% unnest(model %>% purrr::map(broom::augment)) %>%
 
 ## nest 
 ```{r, echo = FALSE}
-by_country %>% unnest(model %>% purrr::map(broom::augment)) %>%
+by_country %>% unnest(model %>% map(broom::augment)) %>%
   select(continent, country, year, .fitted) %>%
   ggplot(aes(x = year, y = .fitted,
              by = country, color = continent)) +
