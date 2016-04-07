@@ -48,7 +48,7 @@ source("check-gss-and-maybe-download.R")
   the labels that stata uses
 
 ```{r}
-GSS <- foreign::read.dta("./data/GSS7214_R4.DTA",
+GSS <- foreign::read.dta("./data/GSS7214_R5.DTA",
                          convert.factors = FALSE)
 ```
 

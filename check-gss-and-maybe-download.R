@@ -3,7 +3,7 @@
 ## directory, downloads the cumulative gss file from NORC's website,
 ## and unzips the downloaded file
 
-if(!file.exists("./data/GSS7214_R4.DTA")){
+if(!file.exists("./data/GSS7214_R5.DTA")){
   if(!dir.exists("./data/")){
     dir.create("./data/")
   }
@@ -12,7 +12,7 @@ if(!file.exists("./data/GSS7214_R4.DTA")){
   unzip("./data/2014_stata.zip", exdir = "./data")
 }
 
-if(file.exists("./data/GSS7214_R4.DTA")){
+if(file.exists("./data/GSS7214_R5.DTA")){
   print("GSS file exists!")
 } else {
   print("Error - GSS couldn't be found!")
