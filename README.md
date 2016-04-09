@@ -15,8 +15,8 @@ Alternatively, you can do a simple git clone:
     git clone https://github.com/jabranham/applied-r-for-social-scientists.git
 
 I've included the slides as a pdf and the code as a .R file for
-convenience. The main file is the applied-r-for-social-scientists.org
-file, which uses emacs's org-mode to produce the slides and code. 
+convenience. They are both exported from the
+[rmarkdown](http://rmarkdown.rstudio.com/) file. 
 
 # License 
 
