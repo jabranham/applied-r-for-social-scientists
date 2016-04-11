@@ -10,6 +10,10 @@ output:
 classoption: aspectratio=169
 ---
 
+## The code
+Available on github:
+https://github.com/jabranham/applied-r-for-social-scientists
+
 # This Class
 ## This class
 * Assumption of *some* previous exposure to R
