@@ -476,7 +476,7 @@ print(output); rm(output)
 * This is where the `map` family (from `purrr`) steps in:
 
 ```{r}
-library(purrr)
+suppressPackageStartupMessages(library(purrr))
 map(thedata, median)
 ```
 
