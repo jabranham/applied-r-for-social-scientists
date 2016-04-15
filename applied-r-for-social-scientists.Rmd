@@ -63,7 +63,7 @@ GSS <- foreign::read.dta("./data/GSS7214_R5.DTA",
   social security)
 
 ```{r}
-table(GSS$nateduc, GSS$natsoc, exclude = NULL)
+with(GSS, table(nateduc, natsoc, exclude=NULL))
 ```
 
 ## correlation
@@ -86,11 +86,11 @@ cor(GSS$nateduc,
  
 
 ```{r}
-table(GSS$race)
+with(GSS, table(race))
 ```
 
-```{r}
-table(GSS$black)
+```{r, error= TRUE}
+with(GSS, table(black))
 ```
 
 ## Variable creation
@@ -99,7 +99,7 @@ table(GSS$black)
 
 ```{r}
 GSS$black <- ifelse(GSS$race == 2, TRUE, FALSE)
-table(GSS$black)
+with(GSS, table(black))
 ```
 
 ## Subsetting observations
@@ -108,9 +108,9 @@ table(GSS$black)
 * Note how ugly this looks!
 
 ```{r}
-cor(GSS$nateduc[GSS$black == TRUE],
-    GSS$natsoc[GSS$black == TRUE],
-    use="complete.obs")
+with(GSS, cor(nateduc[black == TRUE],
+              natsoc[black == TRUE],
+              use="complete.obs"))
 ```
 
 ## dplyr
@@ -180,7 +180,7 @@ GSS <- GSS %>%
                       levels = c(1, 2),
                       labels = c("M", "F")))
 
-table(GSS$sex)
+with(GSS, table(sex))
 ```
 
 ## Operations by subcategories
